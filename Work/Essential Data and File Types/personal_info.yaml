@@ -1,0 +1,13 @@
+first_name: Quanna
+last_name: Loutin
+age: 23
+email: "quannaloutin@gmail.com"
+Address :
+  street: Blank Street
+  city: London
+  state: Washington DC
+  zip: "QUA 789"
+hobbies :
+  -Eating
+  -Sleep
+  -Walking

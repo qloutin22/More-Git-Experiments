@@ -1,0 +1,42 @@
+import yaml
+from yaml.loader import SafeLoader
+from sqlalchemy import create_engine, MetaData
+
+class DatabaseConnector:
+    # ... (other methods like read_db_creds(), etc.)
+
+    @staticmethod
+    def read_db_creds():
+        with open(r'C:\Users\quann\OneDrive\Desktop\Data Engineering\Projects\Multinational Retail Data Centralisation\db_creds.yaml', 'r') as file:
+            db_creds = yaml.load(file, Loader=SafeLoader)
+            return db_creds
+
+    @staticmethod
+    def init_db_engine():
+        db_credentials = DatabaseConnector.read_db_creds()
+        db_url = f"postgresql://{db_credentials['RDS_USER']}:{db_credentials['RDS_PASSWORD']}@{db_credentials['RDS_HOST']}:{db_credentials['RDS_PORT']}/{db_credentials['RDS_DATABASE']}"
+        engine = create_engine(db_url)
+        return engine
+
+    @staticmethod
+    def list_db_tables():
+        engine = DatabaseConnector.init_db_engine()  # Corrected the method call
+        metadata = MetaData()
+        metadata.reflect(bind=engine)
+        table_names = metadata.tables.keys()
+        return table_names
+
+
+db = DatabaseConnector()
+
+credentials = db.read_db_creds()
+print("Database Credentials:", credentials)
+
+engine = db.init_db_engine()
+print("Database Engine:", engine)
+
+if __name__ == "__main__":
+    tables = db.list_db_tables()
+    print("List of tables:", tables)
+
+print("Database Credentials:", credentials)

@@ -51,7 +51,7 @@ class DatabaseConnector():
    @staticmethod
    def upload_to_db(self,df, table_name):
      df = DatabaseConnector.clean_user_data()
-     table_name= 'legacy_users'
+     table_name= 'dim users'
      engine = DatabaseConnector.upload_db_engine()
      try:
          df.to_sql(table_name, engine, if_exists='replace', index=False)

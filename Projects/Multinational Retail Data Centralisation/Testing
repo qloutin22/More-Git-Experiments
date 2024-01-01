@@ -1,89 +1,114 @@
+import tabula as ta
+import pandas as pd
 import yaml
 from yaml.loader import SafeLoader
 from sqlalchemy import create_engine,MetaData,Table
-import pandas as pd
+from database_utils import DatabaseConnector as dc
+import requests
+import time
+from store_data import store_data as sd
 
-class DatabaseConnector():
-   @staticmethod
-   def read_db_creds():
-     with open(r'C:\Users\quann\OneDrive\Desktop\Data Engineering\Projects\Multinational Retail Data Centralisation\db_creds.yaml', 'r') as file:
-       db_creds = yaml.load(file, Loader = SafeLoader)
-       return db_creds
+header = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
 
-   @staticmethod
-   def init_db_engine():
-     db_credentials = DatabaseConnector.read_db_creds()
-     db_url = f"postgresql://{db_credentials['RDS_USER']}:{db_credentials['RDS_PASSWORD']}@{db_credentials['RDS_HOST']}:{db_credentials['RDS_PORT']}/{db_credentials['RDS_DATABASE']}"
-     engine = create_engine(db_url)
-     return engine
-
-   @staticmethod
-   def list_db_tables():
-    engine = DatabaseConnector.init_db_engine()
-    metadata = MetaData()
-    metadata.reflect(bind=engine)
-    table_names =  metadata.tables.keys()
-    return table_names
-
-   @staticmethod
-   def read_rds_table(table_name):
-        engine = DatabaseConnector.init_db_engine()
-        metadata = MetaData()
-        metadata.reflect(bind=engine)
-        if table_name in list(metadata.tables):
-            table = Table(table_name, metadata, autoload_with=engine)
-            return pd.read_sql_table(table_name, engine)
-        else:
-            print(f"Table '{table_name}' does not exist.")
-            return None
-    # Handle the case if the table_name does not exist
-
-   @staticmethod
-   def clean_user_data(user_data):
-        #user_data = user_data.dropna()
-        user_data['date_column'] = pd.to_datetime(user_data['date_column'], errors='coerce')
-        user_data['age'] = pd.to_numeric(user_data['age'], errors='coerce')
-        user_data = user_data[user_data['age'] > 0]
-        return user_data
-
-   @staticmethod
-   def upload_to_db(self, df, table_name):
-    self.engine = self.init_db_engine()  # Initialize the database engine
-    df.to_sql(table_name, con=self.engine, if_exists='replace', index=False)
-    print(f"Uploaded DataFrame to '{table_name}' table in the database.")
-
-
-
-#engine = db.init_db_engine()
-#print("Database Engine:", engine)
-
-#if __name__ == "__main__":
-   # tables = db.list_db_tables()
-    #print("List of tables:", tables)
- 
-#if __name__ == "__main__":
-   # table_name_to_read = 'orders_table'
-   # table_reader = db.read_rds_table(table_name_to_read)
-    #if table_reader is not None:
-        #print(f"DataFrame for '{table_name_to_read}':")
-        #print(table_reader)
+class DataExtractor () :
+    @staticmethod
+    def retrieve_pdf_data(link):
+        link = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf'
+        extracted_tables = ta.read_pdf(link, pages = "all")
+        combined_df = pd.concat(extracted_tables)
+        return combined_df
+    @staticmethod
+    def clean_card_data ():
+        link = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf'
+        data = DataExtractor.retrieve_pdf_data(link)
+        data.dropna(inplace=True)
+        pd.to_datetime(data['expiry_date'],errors='coerce')
+        pd.to_datetime(data['date_payment_confirmed'], errors='coerce')
+        data.drop_duplicates(inplace=True)
+        
+        return data
+    
+    @staticmethod
+    def upload_to_de(self,df, table_name):
+     df = DataExtractor.clean_card_data()
+     table_name= 'dim_card_details'
+     engine = dc.upload_db_engine()
+     try:
+         df.to_sql (table_name, engine, if_exists='replace', index=False)
+         print(f"Data uploaded successfully to table '{table_name}' in the database.")
+     except Exception as e:
+            print(f"Error uploading data to table '{table_name}': {str(e)}")
+    
+    @staticmethod
+    def retrieve_store_data(endpoint):
+        headers = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
+        store_data_list = []
+        
+        for store_number in range(451):  # Assuming 451 stores
+            store_url = f"{endpoint}/{store_number}"
+            response = requests.get(store_url, headers=headers)
+            
+            if response.status_code == 200:
+                store_data = response.json()
+                store_data_list.append(store_data)
+            else:
+                print(f"Failed to retrieve data for store number {store_number}")
+        
+        # Convert the list of dictionaries to a DataFrame
+        df = pd.DataFrame(store_data_list)
+        return df
+            
+            
+        
+        
+        
+        
+    
 
 
-table_name = db.list_db_tables()
-user_data =  db.clean_user_data(table_name) 
-#clean_data = DatabaseConnector.clean_user_data(user_data)
-#print(clean_data)
-
- 
-
- 
-
-cleaned_user_data = db.clean_user_data(user_data)
-
-table_name = 'dim_users'
-
-db.upload_to_db(cleaned_user_data, table_name)
-
-"""Pandas DataFrame and table name to upload to as an argument."""
 
 
+"""de = DataExtractor()"""
+
+
+"""Returns Pandas data fram from a pdf"""
+"""
+pdf = de.retrieve_pdf_data()
+print(pdf)
+"""
+"""Retruen clean data"""
+"""
+clean_data = de.clean_card_data()
+print(clean_data)
+
+"""
+"upload deails users card details to pg admin 4"
+"""
+user_data = de.clean_card_data()
+table_name = "dim_card_details"
+de.upload_to_de('self', user_data,table_name)
+"""
+
+"""Returns the amount of stores and a statues code"""
+"""
+header_dictionary = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
+stores_endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/number_stores'
+
+number_of_stores = de.list_number_of_stores(stores_endpoint, header_dictionary)
+print(f"Number of stores: {number_of_stores}")
+
+"""
+endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details'
+header = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
+store_number = 451
+
+rd = DataExtractor.retrieve_store_data(endpoint)
+#df = pd.DataFrame(sd)
+print(rd)
+
+
+
+# Example: Selecting specific columns (assuming keys are consistent across dictionaries)
+#selected_keys = ['index','address','longitude', 'lat', 'locality', 'store_code', 'staff_numbers', 'opening_date','store_type', 'latitude', 'country_code','continent']
+#store_df = pd.DataFrame([{key: data[key] for key in selected_keys} for data in rd])
+#print(store_df)

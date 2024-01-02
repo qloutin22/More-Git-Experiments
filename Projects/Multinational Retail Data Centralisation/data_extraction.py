@@ -23,7 +23,7 @@ class DataExtractor () :
         link = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf'
         data = DataExtractor.retrieve_pdf_data(link)
         data.dropna(inplace=True)
-        pd.to_datetime(data['expiry_date'],errors='coerce')
+        pd.to_datetime(data['expiry_date'])
         pd.to_datetime(data['date_payment_confirmed'], errors='coerce')
         data.drop_duplicates(inplace=True)
         

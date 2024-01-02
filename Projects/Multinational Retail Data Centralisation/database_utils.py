@@ -79,19 +79,21 @@ db = DatabaseConnector()
 #print(search_egine)
 
 """Lists all tables in a search engine """
-#if __name__ == "__main__":
-  # tables = db.list_db_tables()
-#print("List of tables:", tables)
-
-"""Prints all tables ..."""
 """
 if __name__ == "__main__":
- table_name_to_read = 'legacy_users'
+  tables = db.list_db_tables()
+  print("List of tables:", tables)
+  """
+
+"""Prints all tables ..."""
+
+if __name__ == "__main__":
+ table_name_to_read = 'orders_table'
  table_reader = db.read_rds_table(table_name_to_read)
  if table_reader is not None:
    print(f"DataFrame for '{table_name_to_read}':")
-   print(table_reader.columns)
-   """
+   print (pd.DataFrame(table_reader))
+   
     
 """Prints clean user data""" 
 """
@@ -105,9 +107,10 @@ db.upload_to_db(df,table_name)
 """
 
 """Code to upload data to pgAdmin 4 database"""
+"""
 user_data = db.read_rds_table('legacy_users')
 cleaned_user_data = db.clean_user_data()
 table_name = 'dim users'
 db.upload_to_db('self', user_data,table_name)
 
-
+"""

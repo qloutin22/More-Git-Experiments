@@ -23,6 +23,12 @@ class DataCleaning :
         columns_to_remove = ['first_name', 'last_name','1']
         user_data.drop(columns=columns_to_remove, inplace=True, errors='ignore')
         user_data.drop_duplicates(inplace=True)
+        user_data['date_uuid'] = user_data['date_uuid'].astype('string') 
+        user_data['user_uuid'] = user_data['user_uuid'].astype('string')  
+        user_data['card_number'] = user_data['card_number'].astype('int32')  
+        user_data['store_code'] = user_data['store_code'].astype('string')  
+        user_data['product_code'] = user_data['product_code'].astype('string')  
+        user_data['product_quantity'] = user_data['product_quantity'].astype('int16')  
 
         return user_data
     
@@ -100,7 +106,9 @@ json_url = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details
 x = dc.upload_to_json(json_url)
 print(x)
 """
+"""
 json_url = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json'
 user_data=DataCleaning.upload_to_json(json_url)
 table_name = "dim_date_times"
 upload_db = DataCleaning.upload_to_db_3(user_data,table_name)
+"""

@@ -46,6 +46,12 @@ class DatabaseConnector():
         pd.to_datetime(user_data['date_of_birth'],errors='coerce')
         pd.to_datetime(user_data['join_date'], errors='coerce')
         user_data.drop_duplicates(inplace=True)
+        user_data['first_name'] = user_data['first_name'].astype('string')  
+        user_data['last_name'] = user_data['last_name'].astype('string')    
+        user_data['date_of_birth'] = pd.to_datetime(user_data['date_of_birth'],format='mixed')  
+        user_data['country_code'] = user_data['country_code'].astype('string')  
+        user_data['user_uuid'] = user_data['user_uuid'].astype('string')    
+        user_data['join_date'] = pd.to_datetime(user_data['join_date'])  
         return user_data
 
    @staticmethod
@@ -107,10 +113,10 @@ db.upload_to_db(df,table_name)
 """
 
 """Code to upload data to pgAdmin 4 database"""
-"""
+
 user_data = db.read_rds_table('legacy_users')
 cleaned_user_data = db.clean_user_data()
 table_name = 'dim users'
 db.upload_to_db('self', user_data,table_name)
 
-"""
+

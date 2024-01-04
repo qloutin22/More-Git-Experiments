@@ -26,7 +26,6 @@ class DataExtractor () :
         pd.to_datetime(data['expiry_date'])
         pd.to_datetime(data['date_payment_confirmed'], errors='coerce')
         data.drop_duplicates(inplace=True)
-        
         return data
     
     @staticmethod
@@ -45,7 +44,7 @@ class DataExtractor () :
         headers = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
         store_data_list = []
         
-        for store_number in range(451):  # Assuming 451 stores
+        for store_number in range(451):  
             store_url = f"{endpoint}/{store_number}"
             response = requests.get(store_url, headers=headers)
             
@@ -54,28 +53,24 @@ class DataExtractor () :
                 store_data_list.append(store_data)
             else:
                 print(f"Failed to retrieve data for store number {store_number}")
-        
-        # Convert the list of dictionaries to a DataFrame
         df = pd.DataFrame(store_data_list)
         return df
+    
     @staticmethod
     def called_clean_store_data():
         endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details'
         user_data = DataExtractor.retrieve_store_data(endpoint)
         user_data.dropna(inplace=True)
         user_data['longitude'] = user_data['longitude'].astype('string') 
-        user_data['locality'] = user_data['locality'].astype(str) 
-        user_data['locality'] = user_data['locality'].str.slice(0, 255)
-        user_data['store_code'] = user_data['store_code'].astype(str)
+        user_data['locality'] = user_data['locality'].astype('string') 
+        user_data['store_code'] = user_data['store_code'].astype('string')
         user_data['staff_numbers'] = user_data['staff_numbers'].astype('string' )
         user_data['opening_date'] = pd.to_datetime(user_data['opening_date'],errors='coerce') 
-        user_data['store_type'] = user_data['store_type'].str.slice(str) 
-        user_data['store_type'] = user_data['store_type'].str.slice(0, 255) 
+        user_data['store_type'] = user_data['store_type'].astype('string') 
         user_data['latitude'] = user_data['latitude'].astype('string')
         user_data['country_code'] = user_data['country_code'].astype('string')
-        user_data['continent'] = user_data['continent'].astype(str) 
-        user_data['continent'] = user_data['continent'].str.slice(0, 255)
-        pd.to_datetime(user_data['opening_date'],errors='coerce', format="%d/%m/%Y")
+        user_data['continent'] = user_data['continent'].astype('string') 
+        pd.to_datetime(user_data['opening_date'],errors='coerce')
         user_data.drop_duplicates(inplace=True)
         return user_data
     
@@ -156,13 +151,6 @@ class DataExtractor () :
      except Exception as e:
             print(f"Error uploading data to table '{table_name}': {str(e)}")
    
-    @staticmethod
-    def upload_db_engine():
-     with open(r'C:\Users\quann\OneDrive\Desktop\Data Engineering\Projects\Multinational Retail Data Centralisation\upload_creds.yaml', 'r') as file:
-          db_credentials = yaml.load(file, Loader = SafeLoader)
-     db_url = f"postgresql://{db_credentials['RDS_USER']}:{db_credentials['RDS_PASSWORD']}@{db_credentials['RDS_HOST']}:{db_credentials['RDS_PORT']}/{db_credentials['RDS_DATABASE']}"
-     engine = create_engine(db_url)
-     return engine
         
 
 
@@ -203,27 +191,29 @@ print(f"Number of stores: {number_of_stores}")
 
 """
 """Returns pandas data fram from a list of dictonaries"""
-"""
+
 endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details'
 header = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
 store_number = 451
 
 rd = DataExtractor.retrieve_store_data(endpoint)
-#df = pd.DataFrame(sd)
+df = pd.DataFrame(sd)
 print(rd)
-"""
+
 """Code to clean store data"""
 """
 clean_store_data = de.called_clean_store_data()
 print(clean_store_data)
-
 """
+
 """upload to database"""
 
+
+"""
 user_data=de.called_clean_store_data()
 table_name = "dim_store_details"
 upload_db = de.upload_to_db('self', user_data,table_name)
-
+"""
 
 """prints addresses"""
 """
@@ -245,13 +235,14 @@ products_df = de.extract_from_s3(s3_address)
 cleaned_products_data = de.convert_product_weights(products_df)
 print(cleaned_products_data)  
 """
-
+"""
 s3_address= 's3://data-handling-public/products.csv'
 products_df = de.extract_from_s3(s3_address)
 user_data = de.convert_product_weights(products_df)
 cleaned_user_data = de.clean_user_data()
 table_name = 'dim_products'
 de.upload_to_db_2('self', user_data,table_name)
+"""
 
 
 

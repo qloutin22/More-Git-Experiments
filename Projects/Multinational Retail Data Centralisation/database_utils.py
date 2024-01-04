@@ -2,6 +2,8 @@ import yaml
 from yaml.loader import SafeLoader
 from sqlalchemy import create_engine,MetaData,Table
 import pandas as pd
+import re
+import numpy as np
 
 class DatabaseConnector():
   
@@ -46,13 +48,18 @@ class DatabaseConnector():
         pd.to_datetime(user_data['date_of_birth'],errors='coerce')
         pd.to_datetime(user_data['join_date'], errors='coerce')
         user_data.drop_duplicates(inplace=True)
-        user_data['first_name'] = user_data['first_name'].astype('string')  
-        user_data['last_name'] = user_data['last_name'].astype('string')    
-        user_data['date_of_birth'] = pd.to_datetime(user_data['date_of_birth'],format='mixed')  
+        user_data['first_name'] = user_data['first_name'].astype(str)
+        user_data['first_name'] = user_data['first_name'].str.slice(0, 255)  
+        user_data['last_name'] = user_data['last_name'].astype(str)
+        user_data['last_name'] = user_data['last_name'].str.slice(0, 255)    
+        user_data['date_of_birth'] = pd.to_datetime(user_data['date_of_birth'],errors='coerce')  
         user_data['country_code'] = user_data['country_code'].astype('string')  
         user_data['user_uuid'] = user_data['user_uuid'].astype('string')    
-        user_data['join_date'] = pd.to_datetime(user_data['join_date'])  
+        user_data['join_date'] = pd.to_datetime(user_data['join_date'],errors='coerce')  
+        
         return user_data
+    
+
 
    @staticmethod
    def upload_to_db(self,df, table_name):
@@ -92,13 +99,14 @@ if __name__ == "__main__":
   """
 
 """Prints all tables ..."""
-
+"""
 if __name__ == "__main__":
  table_name_to_read = 'orders_table'
  table_reader = db.read_rds_table(table_name_to_read)
  if table_reader is not None:
    print(f"DataFrame for '{table_name_to_read}':")
    print (pd.DataFrame(table_reader))
+   """
    
     
 """Prints clean user data""" 
@@ -113,10 +121,12 @@ db.upload_to_db(df,table_name)
 """
 
 """Code to upload data to pgAdmin 4 database"""
-
+"""
 user_data = db.read_rds_table('legacy_users')
 cleaned_user_data = db.clean_user_data()
+print(cleaned_user_data)
 table_name = 'dim users'
 db.upload_to_db('self', user_data,table_name)
 
+"""
 

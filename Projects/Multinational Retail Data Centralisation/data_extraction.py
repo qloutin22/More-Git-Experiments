@@ -63,6 +63,18 @@ class DataExtractor () :
         endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details'
         user_data = DataExtractor.retrieve_store_data(endpoint)
         user_data.dropna(inplace=True)
+        user_data['longitude'] = user_data['longitude'].astype('string') 
+        user_data['locality'] = user_data['locality'].astype(str) 
+        user_data['locality'] = user_data['locality'].str.slice(0, 255)
+        user_data['store_code'] = user_data['store_code'].astype(str)
+        user_data['staff_numbers'] = user_data['staff_numbers'].astype('string' )
+        user_data['opening_date'] = pd.to_datetime(user_data['opening_date'],errors='coerce') 
+        user_data['store_type'] = user_data['store_type'].str.slice(str) 
+        user_data['store_type'] = user_data['store_type'].str.slice(0, 255) 
+        user_data['latitude'] = user_data['latitude'].astype('string')
+        user_data['country_code'] = user_data['country_code'].astype('string')
+        user_data['continent'] = user_data['continent'].astype(str) 
+        user_data['continent'] = user_data['continent'].str.slice(0, 255)
         pd.to_datetime(user_data['opening_date'],errors='coerce', format="%d/%m/%Y")
         user_data.drop_duplicates(inplace=True)
         return user_data
@@ -117,7 +129,7 @@ class DataExtractor () :
             else:
                 return None  
             
-        products_df['weight'] = products_df['weight'].astype(str)  
+        products_df['weight'] = products_df['weight'].astype('string')  
         products_df['weight'] = products_df['weight'].apply(lambda x: re.sub(r'[^\d\.]', '', x))  
         products_df['weight_in_kg'] = products_df['weight'].apply(clean_and_convert_weight)
         products_df = products_df.dropna(subset=['weight_in_kg'])
@@ -204,14 +216,14 @@ print(rd)
 """
 clean_store_data = de.called_clean_store_data()
 print(clean_store_data)
-"""
 
-"""upload to database"""
 """
+"""upload to database"""
+
 user_data=de.called_clean_store_data()
 table_name = "dim_store_details"
 upload_db = de.upload_to_db('self', user_data,table_name)
-"""
+
 
 """prints addresses"""
 """
@@ -240,4 +252,6 @@ user_data = de.convert_product_weights(products_df)
 cleaned_user_data = de.clean_user_data()
 table_name = 'dim_products'
 de.upload_to_db_2('self', user_data,table_name)
+
+
 

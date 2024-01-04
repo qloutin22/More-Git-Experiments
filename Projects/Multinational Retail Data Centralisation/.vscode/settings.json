@@ -18,6 +18,15 @@
             "name": "pigella",
             "database": "pigella",
             "username": "postgres"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "sales data",
+            "database": "Sales_data",
+            "username": "postgres"
         }
     ]
 }

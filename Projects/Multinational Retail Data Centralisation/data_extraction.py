@@ -9,6 +9,7 @@ import boto3
 from io import StringIO
 import re
 
+
 header = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
 
 class DataExtractor () :
@@ -22,10 +23,11 @@ class DataExtractor () :
     def clean_card_data ():
         link = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf'
         data = DataExtractor.retrieve_pdf_data(link)
-        data.dropna(inplace=True)
-        pd.to_datetime(data['expiry_date'])
-        pd.to_datetime(data['date_payment_confirmed'], errors='coerce')
+        #data.dropna(inplace=True)
+        pd.to_datetime(data['expiry_date'], errors='coerce')
+        pd.to_datetime(data['date_payment_confirmed'], errors='coerce',format='%Y-%m-%d')
         data.drop_duplicates(inplace=True)
+        data['card_number'] = data['card_number'].astype('string')
         return data
     
     @staticmethod
@@ -60,18 +62,21 @@ class DataExtractor () :
     def called_clean_store_data():
         endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details'
         user_data = DataExtractor.retrieve_store_data(endpoint)
-        user_data.dropna(inplace=True)
+        #user_data.dropna(inplace=True)
+        user_data.drop_duplicates(inplace=True)
         user_data['longitude'] = user_data['longitude'].astype('string') 
         user_data['locality'] = user_data['locality'].astype('string') 
         user_data['store_code'] = user_data['store_code'].astype('string')
+        user_data.drop_duplicates(subset=['store_code'], inplace=True)
         user_data['staff_numbers'] = user_data['staff_numbers'].astype('string' )
-        user_data['opening_date'] = pd.to_datetime(user_data['opening_date'],errors='coerce') 
+        #user_data['opening_date'] = pd.to_datetime(user_data['opening_date'],errors='coerce') 
         user_data['store_type'] = user_data['store_type'].astype('string') 
         user_data['latitude'] = user_data['latitude'].astype('string')
         user_data['country_code'] = user_data['country_code'].astype('string')
         user_data['continent'] = user_data['continent'].astype('string') 
-        pd.to_datetime(user_data['opening_date'],errors='coerce')
-        user_data.drop_duplicates(inplace=True)
+        user_data['opening_date'] = pd.to_datetime(user_data['opening_date'],format='%Y-%m-%d',errors='coerce')
+        #user_data['opening_date'] = pd.to_datetime(user_data['opening_date'],errors='coerce')
+        
         return user_data
     
     @staticmethod
@@ -105,6 +110,7 @@ class DataExtractor () :
     
     @staticmethod
     def convert_product_weights(products_df):
+        products_df.dropna(subset=['weight'], inplace=True)
         def clean_and_convert_weight(weight):
             pattern = r'(\d*\.?\d+)'
             match = re.search(pattern, weight)
@@ -112,6 +118,8 @@ class DataExtractor () :
                 value = float(match.group())  
                 unit = weight[match.end():].strip().lower() 
                 if unit == 'kg':
+                    if value < 1:
+                        return value *10
                     return value
                 elif unit == 'g':
                     return value * 0.001  
@@ -125,19 +133,26 @@ class DataExtractor () :
                 return None  
             
         products_df['weight'] = products_df['weight'].astype('string')  
-        products_df['weight'] = products_df['weight'].apply(lambda x: re.sub(r'[^\d\.]', '', x))  
+        #products_df['weight'] = products_df['weight'].apply(lambda x: re.sub(r'[^\d\.]', '', x))  
         products_df['weight_in_kg'] = products_df['weight'].apply(clean_and_convert_weight)
-        products_df = products_df.dropna(subset=['weight_in_kg'])
+        #products_df = products_df.dropna(subset=['weight_in_kg'])
+        
 
         return products_df
-    
+    @staticmethod
     def clean_user_data():
         s3_address = 's3://data-handling-public/products.csv'
         products_df = de.extract_from_s3(s3_address)
         user_data = de.convert_product_weights(products_df)
         user_data.dropna(inplace=True)
-        pd.to_datetime(user_data['date_added'],errors='coerce')
-        user_data.drop_duplicates(inplace=True)
+        user_data['date_added'] = pd.to_datetime(user_data['date_added'],errors='coerce')
+        #user_data.drop_duplicates(inplace=True)
+        user_data['product_code'] = user_data['product_code'].astype('string')
+        #user_data['expiry_date'] = pd.to_datetime(user_data['expiry_date'], format='%Y-%m-%d')
+        user_data['expiry_date'] = pd.to_datetime(user_data['expiry_date'],errors='coerce')
+        user_data['expiry_date'] = pd.to_datetime(user_data['expiry_date'], format='%Y-%m-%d')
+
+
         return user_data
 
     @staticmethod
@@ -180,7 +195,6 @@ user_data = de.clean_card_data()
 table_name = "dim_card_details"
 de.upload_to_de('self', user_data,table_name)
 """
-
 """Returns the amount of stores and a statues code"""
 """
 header_dictionary = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
@@ -191,7 +205,7 @@ print(f"Number of stores: {number_of_stores}")
 
 """
 """Returns pandas data fram from a list of dictonaries"""
-
+"""
 endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details'
 header = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
 store_number = 451
@@ -199,6 +213,7 @@ store_number = 451
 rd = DataExtractor.retrieve_store_data(endpoint)
 df = pd.DataFrame(sd)
 print(rd)
+"""
 
 """Code to clean store data"""
 """
@@ -209,11 +224,10 @@ print(clean_store_data)
 """upload to database"""
 
 
-"""
 user_data=de.called_clean_store_data()
 table_name = "dim_store_details"
 upload_db = de.upload_to_db('self', user_data,table_name)
-"""
+
 
 """prints addresses"""
 """
@@ -236,13 +250,14 @@ cleaned_products_data = de.convert_product_weights(products_df)
 print(cleaned_products_data)  
 """
 """
+
 s3_address= 's3://data-handling-public/products.csv'
 products_df = de.extract_from_s3(s3_address)
 user_data = de.convert_product_weights(products_df)
-cleaned_user_data = de.clean_user_data()
+#cleaned_user_data = de.clean_user_data()
 table_name = 'dim_products'
-de.upload_to_db_2('self', user_data,table_name)
-"""
+de.upload_to_db_2(user_data,table_name)
 
+"""
 
 
